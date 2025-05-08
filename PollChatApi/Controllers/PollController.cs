@@ -1,39 +1,28 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PollChatApi.Service;
 
+
 namespace PollChatApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class PollController : ControllerBase
     {
-        private readonly PollService _pollMaker;
+        private readonly IPollService _pollService;
 
-        public PollController(PollService pollMaker)
+        public PollController(IPollService pollService)
         {
-            _pollMaker = pollMaker;
+            _pollService = pollService;
         }
 
-        [HttpPost("create-weekly")]
-        public async Task<IActionResult> CreateWeeklyPoll()
-        {
-            try
-            {
-                await _pollMaker.CreateNewPollAsync();
-                return Ok("Poll created or already exists.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Server error: " +  ex.Message);
-            }
-        }
+       
 
         [HttpPost("SettWinner/{pollId}")]
         public async Task<IActionResult> CheckWinner(int pollId)
         {
             try
             {
-                await _pollMaker.SettWinner(pollId);
+                await _pollService.SetWinner(pollId);
                 return Ok("Winner Sett");
             }
             catch(Exception ex)
@@ -46,7 +35,7 @@ namespace PollChatApi.Controllers
         {
             try
             {
-                var results = await _pollMaker.CountVotes(pollId);
+                var results = await _pollService.CountVotes(pollId);
                 return Ok(results);
             }
             catch (Exception ex)
