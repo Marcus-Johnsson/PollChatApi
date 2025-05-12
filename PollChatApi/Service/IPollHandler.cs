@@ -1,20 +1,34 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PollChatApi.Model;
 
-namespace PollChatApi
+namespace PollChatApi.Service
 {
-    public interface IPollService
+    public interface IPollHandler
     {
         Task CreateWeeklyPollAsync();
+        Task SetWinner(int pollId);
+        Task<List<PollResultDto>> CountCurrentPoll();
     }
 
-    public class PollService : IPollService
+        public class PollHandler : IPollHandler
     {
         private readonly MyDbContext _db;
+        private readonly PollServices _services;
 
-        public PollService(MyDbContext db)
+        public PollHandler(MyDbContext db, PollServices pollServices)
         {
             _db = db;
+            _services = pollServices;
+        }
+
+        public async Task SetWinner(int pollId)
+        {
+            await _services.SetWinner(pollId);
+        }
+
+        public async Task<List<PollResultDto>> CountCurrentPoll()
+        {
+            return await _services.CountCurrentPoll();
         }
 
 

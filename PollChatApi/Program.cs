@@ -12,7 +12,7 @@ namespace PollChatApi
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
+            builder.Services.AddScoped<PollServices>();
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
@@ -22,15 +22,22 @@ namespace PollChatApi
 
             builder.Services.AddRazorPages();
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll",
+                    policy => policy
+                        .AllowAnyOrigin()      // Allow requests from any domain
+                        .AllowAnyMethod()      // Allow GET, POST, etc.
+                        .AllowAnyHeader());    // Allow all headers
+            });
 
-            builder.Services.AddScoped<IPollService, PollService>();
 
 
             builder.Services.AddDbContext<MyDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            builder.Services.AddHostedService<WeeklyPollBackgroundService>();
-
+            builder.Services.AddScoped<WeeklyPollBackgroundService>();
+            builder.Services.AddScoped<IPollHandler, PollHandler>();
 
             var app = builder.Build();
 

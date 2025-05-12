@@ -8,12 +8,15 @@ namespace PollChatApi.Controllers
     [Route("api/[controller]")]
     public class PollController : ControllerBase
     {
-        private readonly IPollService _pollService;
+        private readonly IPollHandler _IpollHandler;
 
-        public PollController(IPollService pollService)
+
+
+        public PollController(IPollHandler IpollHandler)
         {
-            _pollService = pollService;
+            _IpollHandler = IpollHandler;
         }
+           
 
        
 
@@ -22,7 +25,7 @@ namespace PollChatApi.Controllers
         {
             try
             {
-                await _pollService.SetWinner(pollId);
+                await _IpollHandler.SetWinner(pollId);
                 return Ok("Winner Sett");
             }
             catch(Exception ex)
@@ -30,12 +33,12 @@ namespace PollChatApi.Controllers
                 return StatusCode(500, "Server error" + ex.Message);
             }
         }
-        [HttpPost("results/{pollId}")]
-        public async Task<IActionResult> CountVotes(int pollId)
+        [HttpPost("results")]
+        public async Task<IActionResult> CountVotes()
         {
             try
             {
-                var results = await _pollService.CountVotes(pollId);
+                var results = await _IpollHandler.CountCurrentPoll();
                 return Ok(results);
             }
             catch (Exception ex)

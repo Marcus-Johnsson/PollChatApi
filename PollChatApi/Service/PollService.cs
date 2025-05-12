@@ -46,24 +46,30 @@ namespace PollChatApi.Service
 
         }
 
-        public async Task<List<PollResultDto>> CountVotes(int pollId)
+        public async Task<List<PollResultDto>> CountCurrentPoll()
         {
-            var poll = await _db.Polls.FindAsync(pollId);
+            var latestPoll = await _db.Polls
+                .OrderByDescending(p => p.Id)
+                .FirstOrDefaultAsync();
 
-            if (poll == null)
+            if (latestPoll == null)
             {
                 throw new Exception("Poll not found");
             }
 
-            var results = await _db.Votes.Where(v => v.PollId == pollId).GroupBy
-                             (v => v.SubjectId).Select(s =>
-                             new PollResultDto
-                             {
-                                 SubjectId = s.Key,
-                                 Votes = s.Count(),
-                                 Title = _db.Subjects.FirstOrDefault(g => g.Id == s.Key).Title
-                             })
-                             .ToListAsync();
+            var results = await _db.Votes
+                    .Where(v => v.PollId == latestPoll.Id)
+                    .GroupBy(v => v.SubjectId)
+                    .Join(_db.Subjects,
+                          voteGroup => voteGroup.Key,
+                          subject => subject.Id,
+                          (voteGroup, subject) => new PollResultDto
+                          {
+                              SubjectId = subject.Id,
+                              Title = subject.Title,
+                              Votes = voteGroup.Count()
+                          })
+                    .ToListAsync();
             return results;
         }
     }

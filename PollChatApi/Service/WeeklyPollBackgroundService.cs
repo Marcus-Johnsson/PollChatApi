@@ -1,15 +1,20 @@
-﻿using System.Diagnostics.Eventing.Reader;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using PollChatApi.Service;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PollChatApi.Service
 {
     public class WeeklyPollBackgroundService : BackgroundService
     {
 
-        private readonly IPollService _pollService;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public WeeklyPollBackgroundService(IPollService pollService)
+        public WeeklyPollBackgroundService(IServiceScopeFactory scopeFactory)
         {
-            _pollService = pollService;
+            _scopeFactory = scopeFactory;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -17,10 +22,14 @@ namespace PollChatApi.Service
             {
                 if (DateTime.Today.DayOfWeek == DayOfWeek.Monday)
                 {
-                    await _pollService.CreateWeeklyPollAsync();
+                    // Create a new DI scope
+                    using var scope = _scopeFactory.CreateScope();
+                    var pollHandler = scope.ServiceProvider.GetRequiredService<IPollHandler>();
 
+                    await pollHandler.CreateWeeklyPollAsync();
                 }
 
+                // Wait an hour before checking again
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
             }
         }
