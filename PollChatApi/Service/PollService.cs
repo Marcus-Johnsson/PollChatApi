@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PollChatApi.Model;
+using PollChatApi.Models;
+using SubjectWars.Data.Dto;
 
 namespace PollChatApi.Service
 {
@@ -71,6 +73,64 @@ namespace PollChatApi.Service
                           })
                     .ToListAsync();
             return results;
+        }
+
+        public async Task<List<MainThread>> NewestThreads()
+        {
+            try
+            {
+                return await _db.MainThreads
+                .OrderByDescending(t => t.Id)
+                .Take(4)
+                .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("MainThread not found");
+            }
+        }
+
+        public async Task<List<CommentCount>> MostCommentsToday()
+        {
+            var today = DateTime.Today;
+
+
+            var CommentsCountToday = await _db.MainThreads
+                .Select(t => new CommentCount
+                {
+                    Thread = t,
+                    CommentsToday = t.Comments.Count(c => c.Date.Date == today)
+                })
+                .OrderByDescending(x => x.CommentsToday)
+                .Take(4)
+                .ToListAsync();
+
+            return CommentsCountToday;
+        }
+
+        public async Task<List<CommentCount>> MostCommentsWeek()
+        {
+            var today = DateTime.Today;
+
+            var weekStart = today.AddDays(-(int)today.DayOfWeek + (today.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
+
+            var CommentsCountWeek = await _db.MainThreads
+            .Select(t => new CommentCount
+            {
+                Thread = t,
+                CommentsToday = t.Comments.Count(c => c.Date.Date >= weekStart && c.Date.Date <= today)
+            })
+            .OrderByDescending(x => x.CommentsToday)
+            .Take(4)
+            .ToListAsync();
+
+            return CommentsCountWeek;
+        }
+
+        public async Task<List<Subject>> FavSubject(string userId)
+        {
+            var result = _db.Users
+                .Include(f=>f.)
         }
     }
 }
