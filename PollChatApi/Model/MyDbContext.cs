@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PollChatApi.Models;
-using SubjectWars.Models;
 
 namespace PollChatApi.Model
 {

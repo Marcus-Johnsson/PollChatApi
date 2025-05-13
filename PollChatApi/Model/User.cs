@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using PollChatApi.Models;
-using SubjectWars.Models;
 
 namespace PollChatApi.Model
 {

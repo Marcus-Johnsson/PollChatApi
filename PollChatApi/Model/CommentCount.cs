@@ -1,6 +1,6 @@
-﻿using PollChatApi.Models;
+﻿using PollChatApi.Model;
 
-namespace SubjectWars.Data.Dto
+namespace PollChatApi.Data.Dto
 {
     public class CommentCount
     {

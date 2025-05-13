@@ -1,7 +1,4 @@
-﻿using PollChatApi.Model;
-using SubjectWars.Models;
-
-namespace PollChatApi.Models
+﻿namespace PollChatApi.Model
 {
     public class MainThread
     {

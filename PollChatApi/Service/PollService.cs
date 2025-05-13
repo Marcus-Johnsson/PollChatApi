@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PollChatApi.Model;
-using PollChatApi.Models;
-using SubjectWars.Data.Dto;
 
 namespace PollChatApi.Service
 {
@@ -51,7 +49,7 @@ namespace PollChatApi.Service
         public async Task<List<PollResultDto>> CountCurrentPoll()
         {
             var latestPoll = await _db.Polls
-                .OrderByDescending(p => p.Id)
+                .Include(p => p.Votes)
                 .FirstOrDefaultAsync();
 
             if (latestPoll == null)
@@ -59,19 +57,19 @@ namespace PollChatApi.Service
                 throw new Exception("Poll not found");
             }
 
-            var results = await _db.Votes
-                    .Where(v => v.PollId == latestPoll.Id)
-                    .GroupBy(v => v.SubjectId)
-                    .Join(_db.Subjects,
-                          voteGroup => voteGroup.Key,
-                          subject => subject.Id,
-                          (voteGroup, subject) => new PollResultDto
-                          {
-                              SubjectId = subject.Id,
-                              Title = subject.Title,
-                              Votes = voteGroup.Count()
-                          })
-                    .ToListAsync();
+            var results = latestPoll.Votes
+                .GroupBy(v => v.SubjectId)
+                .Join(_db.Subjects,
+                      voteGroup => voteGroup.Key,
+                      subject => subject.Id,
+                      (voteGroup, subject) => new PollResultDto
+                      {
+                          SubjectId = subject.Id,
+                          Title = subject.Title,
+                          Votes = voteGroup.Count()
+                      })
+                .ToList();
+
             return results;
         }
 

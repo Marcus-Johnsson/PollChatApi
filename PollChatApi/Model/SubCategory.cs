@@ -1,4 +1,4 @@
-﻿namespace SubjectWars.Models
+﻿namespace PollChatApi.Model
 {
     public class SubCategory
     {
