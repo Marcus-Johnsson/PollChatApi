@@ -1,4 +1,4 @@
-﻿namespace PollChatApi.Model
+﻿namespace PollChatApi.DTO
 {
     public class PollResultDto
     {

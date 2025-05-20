@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using PollChatApi.Model;
 using PollChatApi.Service;
+using PollChatApi.Service.Background;
 using System;
 
 
@@ -15,6 +16,8 @@ namespace PollChatApi
             builder.Services.AddScoped<PollServices>();
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
 
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -35,9 +38,12 @@ namespace PollChatApi
 
             builder.Services.AddDbContext<MyDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddHostedService<SetWinnerBackgroundService>();
+            builder.Services.AddScoped<SettWinner>();
+            builder.Services.AddScoped<CreatePollWeekly>();
+
 
             builder.Services.AddScoped<WeeklyPollBackgroundService>();
-            builder.Services.AddScoped<IPollHandler, PollHandler>();
 
             var app = builder.Build();
 
@@ -45,6 +51,8 @@ namespace PollChatApi
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
+                app.UseSwagger();
+                app.UseSwaggerUI();
             }
 
             app.UseHttpsRedirection();

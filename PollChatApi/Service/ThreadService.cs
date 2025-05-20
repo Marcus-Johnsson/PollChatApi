@@ -1,53 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PollChatApi.Data.Dto;
-using PollChatApi.DTO;
+﻿using PollChatApi.Data.Dto;
 using PollChatApi.Model;
+using Microsoft.EntityFrameworkCore;
 
 namespace PollChatApi.Service
 {
-    public class PollServices
+    public class ThreadService
     {
         private readonly MyDbContext _db;
 
-        public PollServices(MyDbContext db)
+        public ThreadService(MyDbContext db)
         {
             _db = db;
         }
 
 
-
-
-
-       
-
-        public async Task<List<PollResultDto>> CountCurrentPoll()
-        {
-            var latestPoll = await _db.Polls
-                .Include(p => p.Votes)
-                .FirstOrDefaultAsync();
-
-            if (latestPoll == null)
-            {
-                throw new Exception("Poll not found");
-            }
-
-            var results = latestPoll.Votes
-                .GroupBy(v => v.SubjectId)
-                .Join(_db.Subjects,
-                      voteGroup => voteGroup.Key,
-                      subject => subject.Id,
-                      (voteGroup, subject) => new PollResultDto
-                      {
-                          SubjectId = subject.Id,
-                          Title = subject.Title,
-                          Votes = voteGroup.Count()
-                      })
-                .ToList();
-
-            return results;
-        }
-
-        public async Task<List<MainThread>> NewestThreads()
+        public async Task<List<MainThread>> GetNewestThreads()
         {
             try
             {
@@ -62,7 +29,7 @@ namespace PollChatApi.Service
             }
         }
 
-        public async Task<List<CommentCount>> MostCommentsToday()
+        public async Task<List<CommentCount>> GetMostCommentsToday()
         {
             var today = DateTime.Today;
 
@@ -80,7 +47,7 @@ namespace PollChatApi.Service
             return CommentsCountToday;
         }
 
-        public async Task<List<CommentCount>> MostCommentsWeek()
+        public async Task<List<CommentCount>> GetMostCommentsWeek()
         {
             var today = DateTime.Today;
 
@@ -99,17 +66,16 @@ namespace PollChatApi.Service
             return CommentsCountWeek;
         }
 
-        public async Task<User?> FavSubject(string userId)
+        public async Task<User?> GetFavs(string userId)
         {
             var result = await _db.Users
                 .Include(f => f.FavoriteSubcategories)
                 .Include(f => f.FavoriteSubjects)
                 .Include(f => f.FavoriteThreads)
                 .FirstOrDefaultAsync(p => p.Id == userId);
-      
+
 
             return result;
         }
-    
     }
 }
