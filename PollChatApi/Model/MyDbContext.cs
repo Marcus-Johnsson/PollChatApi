@@ -20,5 +20,14 @@ namespace PollChatApi.Model
 
         public DbSet<SubCategory> SubCategory { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<MainThread>()
+                .HasQueryFilter(t => t.RemovedAt == null);
+
+            modelBuilder.Entity<Comment>()
+                .HasQueryFilter(c => c.RemovedAt == null);
+        }
+
     }
 }

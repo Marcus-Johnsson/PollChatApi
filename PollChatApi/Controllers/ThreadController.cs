@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PollChatApi.DAL;
 using PollChatApi.DTO;
 using PollChatApi.Model;
@@ -9,6 +10,9 @@ namespace PollChatApi.Controllers
     [Route("api/[controller]")]
     public class ThreadController : Controller
     {
+        private readonly MyDbContext _db;
+        public ThreadController(MyDbContext db)
+        {  _db = db; }
 
         [HttpGet]
         public async Task<ActionResult<UserFavorites>> GetFavoriteSubject(string id)
@@ -98,6 +102,57 @@ namespace PollChatApi.Controllers
             {
                 return StatusCode(500, "server error: " + ex.Message);
             }
+        }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> PostThread([FromBody] MainThread thread)
+        {
+            try
+            {
+                var newThread = new MainThread
+                {
+                    UserId = thread.UserId,
+                    SubjectId = thread.SubjectId,
+                    SubCategory = thread.SubCategory,
+                    Title = thread.Title,
+                    Content = thread.Content,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _db.SaveChangesAsync();
+
+                return Ok(newThread);
+                
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500,"server error: " +  ex.Message);            
+            }
+
+        }
+
+        [HttpPut("delete/{id}")]
+        public async Task<IActionResult> DeleteThread([FromQuery] string userId, int id)
+        {
+            var result = await _db.MainThreads
+                .Include(p=>p.Comments)
+                .SingleOrDefaultAsync(p=>p.Id == id);
+                
+
+            if(result == null)
+                { return NotFound(); }
+
+            if(result.UserId != userId)
+            {  return Forbid(); }
+
+            foreach(var comment in  result.Comments)
+            {
+                comment.RemovedAt = DateTime.UtcNow;
+            }
+
+            result.RemovedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok();
         }
 
 

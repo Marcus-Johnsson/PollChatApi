@@ -12,7 +12,7 @@
 
         public bool MainComment { get; set; }
 
-        public string? ImagePath { get; set; }
+        public DateTime? RemovedAt { get; set; }
 
         public ICollection<Comment>? Replies { get; set; }
     }

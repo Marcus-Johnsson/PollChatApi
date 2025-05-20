@@ -25,6 +25,7 @@ namespace PollChatApi
 
             builder.Services.AddRazorPages();
 
+
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll",
