@@ -42,6 +42,8 @@ namespace PollChatApi
             builder.Services.AddHostedService<SetWinnerBackgroundService>();
             builder.Services.AddScoped<SettWinner>();
             builder.Services.AddScoped<CreatePollWeekly>();
+            builder.Services.AddScoped<DeleteFromDatabase>();
+
 
 
             builder.Services.AddScoped<WeeklyPollBackgroundService>();

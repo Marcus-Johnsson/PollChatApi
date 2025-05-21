@@ -20,7 +20,7 @@ namespace PollChatApi.Service.Background
             {
                 if (DateTime.Today.DayOfWeek == DayOfWeek.Sunday)
                 {
-                    using var scope = _scopeFactory.CreateScope();
+                    using var scope = _scopeFactory.CreateAsyncScope();
                     var pollHandler = scope.ServiceProvider.GetRequiredService<SettWinner>();
 
                     await pollHandler.SetWinner();
