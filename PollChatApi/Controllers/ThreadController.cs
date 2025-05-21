@@ -12,7 +12,7 @@ namespace PollChatApi.Controllers
     {
         private readonly MyDbContext _db;
         public ThreadController(MyDbContext db)
-        {  _db = db; }
+        { _db = db; }
 
         [HttpGet]
         public async Task<ActionResult<UserFavorites>> GetFavoriteSubject(string id)
@@ -48,7 +48,7 @@ namespace PollChatApi.Controllers
             }
         }
         [HttpGet("today")]
-        public async Task<ActionResult<MainThread>> GetMostCommentsToday ()
+        public async Task<ActionResult<MainThread>> GetMostCommentsToday()
         {
             try
             {
@@ -94,38 +94,56 @@ namespace PollChatApi.Controllers
             try
             {
                 var result = await ThreadManager.GetFilterdThreads(userId, subjectId, limit, afterCursor, subcategoryIds, favoritesOnly);
-                if(result == null)
+                if (result == null)
                 { return NotFound(); }
                 return Ok(result);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, "server error: " + ex.Message);
             }
         }
 
         [HttpPost("create")]
-        public async Task<IActionResult> PostThread([FromBody] MainThread thread)
+        public async Task<IActionResult> PostThread([FromForm] ThreadWithImageDto dto)
         {
             try
             {
+                string? imagePath = null;
+
+                if (dto.Image != null)
+                {
+                    var fileName = Guid.NewGuid() + Path.GetExtension(dto.Image.FileName);
+                    var filePath = Path.Combine("wwwroot", "userImage", fileName);
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await dto.Image.CopyToAsync(stream);
+
+                    imagePath = "/userImage" + fileName;
+
+                }
+
+
                 var newThread = new MainThread
                 {
-                    UserId = thread.UserId,
-                    SubjectId = thread.SubjectId,
-                    SubCategory = thread.SubCategory,
-                    Title = thread.Title,
-                    Content = thread.Content,
+                    UserId = dto.UserId,
+                    SubjectId = dto.SubjectId,
+                    ImagePath = imagePath,
+                    SubCategoryId = dto.SubCategoryId,
+                    Title = dto.Title,
+                    Content = dto.Content,
                     CreatedAt = DateTime.UtcNow
                 };
                 await _db.SaveChangesAsync();
 
                 return Ok(newThread);
-                
+
             }
             catch (Exception ex)
             {
-                return StatusCode(500,"server error: " +  ex.Message);            
+                return StatusCode(500, "server error: " + ex.Message);
             }
 
         }
@@ -134,17 +152,17 @@ namespace PollChatApi.Controllers
         public async Task<IActionResult> DeleteThread([FromQuery] string userId, int id)
         {
             var result = await _db.MainThreads
-                .Include(p=>p.Comments)
-                .SingleOrDefaultAsync(p=>p.Id == id);
-                
+                .Include(p => p.Comments)
+                .SingleOrDefaultAsync(p => p.Id == id);
 
-            if(result == null)
-                { return NotFound(); }
 
-            if(result.UserId != userId)
-            {  return Forbid(); }
+            if (result == null)
+            { return NotFound(); }
 
-            foreach(var comment in  result.Comments)
+            if (result.UserId != userId)
+            { return Forbid(); }
+
+            foreach (var comment in result.Comments)
             {
                 comment.RemovedAt = DateTime.UtcNow;
             }
@@ -155,18 +173,8 @@ namespace PollChatApi.Controllers
             return Ok();
         }
 
+        // api's to create....
 
-
-        //[HttpPost("createthread")]
-        //public IActionResult PostCreateThread()
-        //{
-
-        //}
-
-        //[HttpDelete("deletethread")]
-        //public IActionResult DeleteThread()
-        //{
-
-        //}
+       // Update Thread, GetThreadDetails, AddComment, UpdateComment, DeleteComment, AddFavorite,VoteOnPoll
     }
 }
