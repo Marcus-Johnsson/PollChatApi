@@ -20,6 +20,10 @@ namespace PollChatApi.Model
 
         public DbSet<SubCategory> SubCategory { get; set; }
 
+        public DbSet<ThreadEditHistory> ThreadHistory { get; set; }
+
+        public DbSet<CommentEditHistory> CommentHistory { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<MainThread>()

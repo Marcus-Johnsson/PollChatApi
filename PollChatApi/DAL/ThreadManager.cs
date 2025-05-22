@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollChatApi.Data.Dto;
 using PollChatApi.DTO;
@@ -157,5 +158,78 @@ namespace PollChatApi.DAL
                 .SelectMany(u => u.FavoriteThreads.Select(ft => ft.Id))
                 .ToListAsync();
         }
+
+        public static async Task<IActionResult> UpdateThread([FromBody] ThreadEditDto dto)
+        {
+            var thread = await _db.MainThreads.Where(p => p.Id == dto.ThreadId).FirstOrDefaultAsync();
+
+            var history = new ThreadEditHistory
+            {
+                ThreadId = thread.Id,
+                OldTitle = thread.Title,
+                OldContent = thread.Content,
+                EditedTime = DateTime.UtcNow,
+                EditedByUserId = dto.EditedByUserId,
+
+            };
+            if (thread == null)
+            {
+                return new NotFoundObjectResult($"Thread with ID {dto.ThreadId} not found.");
+            }
+
+            thread.Title = dto.Title;
+            thread.Content = dto.Content;
+
+            thread.SubjectId = dto.SubjectId;
+            thread.SubCategoryId = dto.SubCategoryId;
+
+
+
+            _db.ThreadHistory.Add(history);
+
+            _db.SaveChanges();
+
+            return new OkObjectResult(thread);
+        }
+
+        public static async Task<IActionResult> UpdateComment([FromBody] CommentEditHistory dto)
+        {
+            var oldComment = await _db.Comments.Where(p=>p.Id == dto.Id).SingleOrDefaultAsync();
+
+            if(oldComment == null)
+            {
+                return new NotFoundObjectResult($"Comment with ID {dto.Id} not found.");
+            }
+
+            var history = new CommentEditHistory
+            {
+                Text = oldComment.Text,
+                EditDate = DateTime.UtcNow,
+                EditByUserId = dto.EditByUserId,
+            };
+
+            oldComment.Text = dto.Text;
+            
+            _db.CommentHistory.Add(history);
+
+            _db.SaveChanges();
+
+            return new OkObjectResult(oldComment);
+        }
+
+        public static async Task<IActionResult> GetThreadDetails(int id)
+        {
+            var thread = await _db.MainThreads
+                .Include(p=>p.Comments)
+                .ToListAsync();
+
+            if (thread == null)
+            { return new NotFoundObjectResult("Thread not found. Thread Id " + id); }
+
+            return new OkObjectResult(thread);
+        }
+
+
+
     }
 }

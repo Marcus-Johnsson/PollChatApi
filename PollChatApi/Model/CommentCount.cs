@@ -9,3 +9,5 @@ namespace PollChatApi.Data.Dto
         public int CommentsToday { get; set; }
     }
 }
+
+// ummm what?? I need sleep and coffe for this one....

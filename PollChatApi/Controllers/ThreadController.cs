@@ -104,7 +104,7 @@ namespace PollChatApi.Controllers
             }
         }
 
-        [HttpPost("create")]
+        [HttpPost("createthread")]
         public async Task<IActionResult> PostThread([FromForm] ThreadWithImageDto dto)
         {
             try
@@ -136,6 +136,7 @@ namespace PollChatApi.Controllers
                     Content = dto.Content,
                     CreatedAt = DateTime.UtcNow
                 };
+                await _db.AddAsync(newThread);
                 await _db.SaveChangesAsync();
 
                 return Ok(newThread);
@@ -147,8 +148,41 @@ namespace PollChatApi.Controllers
             }
 
         }
+        [HttpPost("createcomment")]
+        public async Task<IActionResult> PostComment([FromBody] PostCommentDto dto)
+        {
+            try
+            {
+                var comment = new Comment
+                {
+                    UserId = dto.UserId,
+                    Text = dto.Comment,
+                    Date = DateTime.UtcNow,
+                    ParentCommentId = dto.ParentCommentId,
+                    ThreadId = dto.ThreadId
+                };
 
-        [HttpPut("delete/{id}")]
+                if (dto.ParentCommentId.HasValue)
+                {
+                    var parentComment = await _db.Comments.AnyAsync(p => p.Id == dto.ParentCommentId);
+                    if (!parentComment)
+                    {
+                        return BadRequest("Parent comment not found");
+                    }
+                }
+
+                await _db.AddAsync(comment);
+                await _db.SaveChangesAsync();
+
+                return Ok(comment);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "server error: " + ex.Message);
+            }
+        }
+
+        [HttpPut("deletethread/{id}")]
         public async Task<IActionResult> DeleteThread([FromQuery] string userId, int id)
         {
             var result = await _db.MainThreads
@@ -172,9 +206,35 @@ namespace PollChatApi.Controllers
 
             return Ok();
         }
+        [HttpPut("deletecomment/{id}")]
+        public async Task<IActionResult> DeleteComment([FromQuery] string userId, int id)
+        {
+            var comment = await _db.Comments
+            .Include(c => c.Replies)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (comment == null)
+            { return NotFound(); }
+
+            if (!comment.ParentCommentId.HasValue)
+            {
+                foreach (var replies in comment.Replies)
+                {
+                    replies.RemovedAt = DateTime.UtcNow;
+                }
+            }
+            else
+            {
+                comment.RemovedAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok();
+        }
 
         // api's to create....
 
-       // Update Thread, GetThreadDetails, AddComment, UpdateComment, DeleteComment, AddFavorite,VoteOnPoll
+        // UpdateThread check, GetThreadDetails check, AddComment check, UpdateComment check, DeleteComment, AddFavorite,VoteOnPoll
     }
 }
