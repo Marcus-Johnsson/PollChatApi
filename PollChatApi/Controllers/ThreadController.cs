@@ -14,7 +14,7 @@ namespace PollChatApi.Controllers
         public ThreadController(MyDbContext db)
         { _db = db; }
 
-        [HttpGet]
+        [HttpGet("Getfavo")]
         public async Task<ActionResult<UserFavorites>> GetFavoriteSubject(string id)
         {
             try
@@ -30,7 +30,7 @@ namespace PollChatApi.Controllers
                 return StatusCode(500, "server error1: " + ex.Message);
             }
         }
-        [HttpGet]
+        [HttpGet("newthreads")]
         public async Task<ActionResult<MainThread>> GetNewestThreads()
         {
             try
@@ -48,7 +48,7 @@ namespace PollChatApi.Controllers
             }
         }
         [HttpGet("today")]
-        public async Task<ActionResult<MainThread>> GetMostCommentsToday()
+        public async Task<ActionResult<CommentCountDto>> GetMostCommentsToday()
         {
             try
             {
@@ -65,7 +65,7 @@ namespace PollChatApi.Controllers
             }
         }
         [HttpGet("week")]
-        public async Task<ActionResult<MainThread>> GetMostCommentsWeek()
+        public async Task<ActionResult<CommentCountDto>> GetMostCommentsWeek()
         {
             try
             {
@@ -93,7 +93,7 @@ namespace PollChatApi.Controllers
         {
             try
             {
-                var result = await ThreadManager.GetFilterdThreads(userId, subjectId, limit, afterCursor, subcategoryIds, favoritesOnly);
+                var result = await ThreadManager.GetFilterdThreads(userId, subjectId, limit, afterCursor, favoritesOnly);
                 if (result == null)
                 { return NotFound(); }
                 return Ok(result);
@@ -131,7 +131,6 @@ namespace PollChatApi.Controllers
                     UserId = dto.UserId,
                     SubjectId = dto.SubjectId,
                     ImagePath = imagePath,
-                    SubCategoryId = dto.SubCategoryId,
                     Title = dto.Title,
                     Content = dto.Content,
                     CreatedAt = DateTime.UtcNow

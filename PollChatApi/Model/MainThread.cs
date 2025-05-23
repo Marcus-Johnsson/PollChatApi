@@ -14,9 +14,6 @@
 
         public virtual Subject Subject { get; set; } = null!;
 
-        public int? SubCategoryId { get; set; }
-        public virtual SubCategory? SubCategory { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? RemovedAt { get; set; }

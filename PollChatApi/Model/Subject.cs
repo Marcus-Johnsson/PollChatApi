@@ -3,9 +3,10 @@
     public class Subject
     {
         public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
 
-        public string Title { get; set; }
+        public ICollection<User>? SubscribedUsers { get; set; } 
 
-        public List<Poll> Polls { get; set; } = new();
+        public ICollection<Poll>? Polls { get; set; } 
     }
 }

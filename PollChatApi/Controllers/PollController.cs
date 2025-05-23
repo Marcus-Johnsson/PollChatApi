@@ -9,15 +9,19 @@ namespace PollChatApi.Controllers
     [Route("api/[controller]")]
     public class PollController : ControllerBase
     {
+        private readonly PollManager _pollManager;
 
-           
-        
+        public PollController(PollManager pollManager)
+        {
+            _pollManager = pollManager;
+        }
+
         [HttpGet("results")]
         public async Task<IActionResult> CountVotes()
         {
             try
             {
-                var results = await PollManager.CountCurrentPoll();
+                var results = await _pollManager.CountCurrentPoll();
                 return Ok(results);
             }
             catch (Exception ex)

@@ -1,5 +1,6 @@
 
 using Microsoft.EntityFrameworkCore;
+using PollChatApi.DAL;
 using PollChatApi.Model;
 using PollChatApi.Service;
 using PollChatApi.Service.Background;
@@ -43,6 +44,8 @@ namespace PollChatApi
             builder.Services.AddScoped<SettWinner>();
             builder.Services.AddScoped<CreatePollWeekly>();
             builder.Services.AddScoped<DeleteFromDatabase>();
+            builder.Services.AddScoped<DeleteCommentsFromDatabase>();
+            builder.Services.AddScoped<PollManager>();
 
 
 

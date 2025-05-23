@@ -1,6 +1,6 @@
-﻿using PollChatApi.Data.Dto;
-using PollChatApi.Model;
+﻿using PollChatApi.Model;
 using Microsoft.EntityFrameworkCore;
+using PollChatApi.DTO;
 
 namespace PollChatApi.Service
 {
@@ -29,13 +29,13 @@ namespace PollChatApi.Service
             }
         }
 
-        public async Task<List<CommentCount>> GetMostCommentsToday()
+        public async Task<List<CommentCountDto>> GetMostCommentsToday()
         {
             var today = DateTime.Today;
 
 
             var CommentsCountToday = await _db.MainThreads
-                .Select(t => new CommentCount
+                .Select(t => new CommentCountDto
                 {
                     Thread = t,
                     CommentsToday = t.Comments.Count(c => c.Date.Date == today)
@@ -47,14 +47,14 @@ namespace PollChatApi.Service
             return CommentsCountToday;
         }
 
-        public async Task<List<CommentCount>> GetMostCommentsWeek()
+        public async Task<List<CommentCountDto>> GetMostCommentsWeek()
         {
             var today = DateTime.Today;
 
             var weekStart = today.AddDays(-(int)today.DayOfWeek + (today.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
 
             var CommentsCountWeek = await _db.MainThreads
-            .Select(t => new CommentCount
+            .Select(t => new CommentCountDto
             {
                 Thread = t,
                 CommentsToday = t.Comments.Count(c => c.Date.Date >= weekStart && c.Date.Date <= today)
@@ -69,7 +69,6 @@ namespace PollChatApi.Service
         public async Task<User?> GetFavs(string userId)
         {
             var result = await _db.Users
-                .Include(f => f.FavoriteSubcategories)
                 .Include(f => f.FavoriteSubjects)
                 .Include(f => f.FavoriteThreads)
                 .FirstOrDefaultAsync(p => p.Id == userId);

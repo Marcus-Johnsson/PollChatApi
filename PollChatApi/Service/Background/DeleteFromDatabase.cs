@@ -21,6 +21,8 @@ namespace PollChatApi.Service.Background
                  .Where(t => t.RemovedAt != null && t.RemovedAt <= now)
                  .ToListAsync();
 
+            
+
             foreach (var item in oldThreads)
             {
                 if(!string.IsNullOrEmpty(item.ImagePath))
@@ -42,5 +44,21 @@ namespace PollChatApi.Service.Background
 
             await _db.SaveChangesAsync();
         }
+
+        public async Task DeleteDailyFromDataBaseComments()
+        {
+            DateTime now = DateTime.UtcNow.AddDays(30);
+
+            var oldComments = await _db.Comments.Where
+                                (t => t.RemovedAt != null &&
+                                t.RemovedAt <= now)
+                                .ToListAsync();
+
+            foreach(var comment in oldComments)
+            { _db.Remove(comment); }
+            
+            _db.SaveChanges();
+        }
+        
     }
 }

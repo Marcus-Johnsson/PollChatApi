@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PollChatApi.DTO;
 
 namespace PollChatApi.Model
 {
@@ -18,8 +19,6 @@ namespace PollChatApi.Model
 
         public DbSet<Comment> Comments { get; set; }
 
-        public DbSet<SubCategory> SubCategory { get; set; }
-
         public DbSet<ThreadEditHistory> ThreadHistory { get; set; }
 
         public DbSet<CommentEditHistory> CommentHistory { get; set; }
@@ -31,6 +30,7 @@ namespace PollChatApi.Model
 
             modelBuilder.Entity<Comment>()
                 .HasQueryFilter(c => c.RemovedAt == null);
+
         }
 
     }

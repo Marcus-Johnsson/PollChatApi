@@ -1,10 +1,11 @@
-﻿namespace PollChatApi.Service.Background
+﻿using Microsoft.Identity.Client;
+
+namespace PollChatApi.Service.Background
 {
-    public class DeleteFromDatabaseService : BackgroundService
+    public class DeleteCommentsFromDatabase : BackgroundService
     {
         private readonly IServiceScopeFactory _scope;
-
-        public DeleteFromDatabaseService(IServiceScopeFactory scope) 
+        public DeleteCommentsFromDatabase(IServiceScopeFactory scope) 
         {
             _scope = scope;
         }
@@ -16,12 +17,9 @@
                 using var scope = _scope.CreateAsyncScope();
                 var action = scope.ServiceProvider.GetRequiredService<DeleteFromDatabase>();
 
-                await action.DeleteDailyFromDatabase();
+                await action.DeleteDailyFromDataBaseComments();
             }
             await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
         }
-
-
     }
-    
 }

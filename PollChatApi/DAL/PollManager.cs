@@ -5,24 +5,29 @@ using PollChatApi.Model;
 
 namespace PollChatApi.DAL
 {
-    public static class PollManager
+    public  class PollManager
     {
-        private static MyDbContext _db;
+        private readonly MyDbContext _db;
 
-        public static void init(MyDbContext db) 
+        public PollManager(MyDbContext db)
         {
             _db = db;
         }
 
-        public static async Task<List<PollResultDto>> CountCurrentPoll()
+        public  async Task<List<PollResultDto>> CountCurrentPoll()
         {
             var latestPoll = await _db.Polls
                 .Include(p => p.Votes)
                 .FirstOrDefaultAsync();
 
-            if (latestPoll == null)
+            //if (latestPoll == null)
+            //{
+            //    throw new Exception("Poll not found");
+            //}
+            if (latestPoll == null || latestPoll.Votes == null)
             {
-                throw new Exception("Poll not found");
+                // No poll or no votes, return empty result
+                return new List<PollResultDto>();
             }
 
             var results = latestPoll.Votes
@@ -42,7 +47,7 @@ namespace PollChatApi.DAL
         }
 
 
-        public static async Task CreateNewPollAsync()
+        public  async Task CreateNewPollAsync()
         {
             var newestPoll = await _db.Polls
                 .OrderByDescending(p => p.Id)

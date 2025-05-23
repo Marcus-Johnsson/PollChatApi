@@ -10,8 +10,6 @@
 
         public string Content { get; set; } = string.Empty;
 
-        public IFormFile Image { get; set; }
-
-        public int? SubCategoryId { get; set; }
+        public IFormFile? Image { get; set; }
     }
 }

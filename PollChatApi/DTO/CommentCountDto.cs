@@ -1,8 +1,8 @@
 ﻿using PollChatApi.Model;
 
-namespace PollChatApi.Data.Dto
+namespace PollChatApi.DTO
 {
-    public class CommentCount
+    public class CommentCountDto
     {
         public MainThread Thread { get; set; }
 

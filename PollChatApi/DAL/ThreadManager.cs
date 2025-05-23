@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PollChatApi.Data.Dto;
 using PollChatApi.DTO;
 using PollChatApi.Model;
 
@@ -22,6 +21,7 @@ namespace PollChatApi.DAL
             try
             {
                 return await _db.MainThreads
+                    .Where(p=>p.RemovedAt == null)
                 .OrderByDescending(t => t.Id)
                 .Take(4)
                 .ToListAsync();
@@ -32,13 +32,13 @@ namespace PollChatApi.DAL
             }
         }
 
-        public static async Task<List<CommentCount>> GetMostCommentsToday()
+        public static async Task<List<CommentCountDto>> GetMostCommentsToday()
         {
             var today = DateTime.Today;
 
 
             var CommentsCountToday = await _db.MainThreads
-                .Select(t => new CommentCount
+                .Select(t => new CommentCountDto
                 {
                     Thread = t,
                     CommentsToday = t.Comments.Count(c => c.Date.Date == today)
@@ -50,14 +50,14 @@ namespace PollChatApi.DAL
             return CommentsCountToday;
         }
 
-        public static async Task<List<CommentCount>> GetMostCommentsWeek()
+        public static async Task<List<CommentCountDto>> GetMostCommentsWeek()
         {
             var today = DateTime.Today;
 
             var weekStart = today.AddDays(-(int)today.DayOfWeek + (today.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
 
             var CommentsCountWeek = await _db.MainThreads
-            .Select(t => new CommentCount
+            .Select(t => new CommentCountDto
             {
                 Thread = t,
                 CommentsToday = t.Comments.Count(c => c.Date.Date >= weekStart && c.Date.Date <= today)
@@ -72,7 +72,6 @@ namespace PollChatApi.DAL
         public static async Task<UserFavorites?> GetFavs(string userId)
         {
             var user = await _db.Users
-               .Include(u => u.FavoriteSubcategories)
                .Include(u => u.FavoriteSubjects)
                .Include(u => u.FavoriteThreads)
                .FirstOrDefaultAsync(u => u.Id == userId);
@@ -83,7 +82,6 @@ namespace PollChatApi.DAL
             return new UserFavorites
             {
                 Id = user.Id,
-                FavoriteSubcategories = user.FavoriteSubcategories?.ToList() ?? new(),
                 FavoriteSubjects = user.FavoriteSubjects?.ToList() ?? new(),
                 FavoriteThreads = user.FavoriteThreads?.ToList() ?? new()
             };
@@ -95,7 +93,6 @@ namespace PollChatApi.DAL
             [FromQuery] int? subjectId,
             [FromQuery] int limit = 10,
             [FromQuery] string? afterCursor = null,
-            [FromQuery] List<int>? subcategoryIds = null,
             [FromQuery] bool favoritesOnly = false
                         )
         {
@@ -104,11 +101,6 @@ namespace PollChatApi.DAL
             if (subjectId.HasValue)
             {
                 query = query.Where(t => t.SubjectId == subjectId.Value);
-            }
-
-            if (subcategoryIds != null && subcategoryIds.Count > 0)
-            {
-                query = query.Where(t => t.SubCategoryId.HasValue && subcategoryIds.Contains(t.SubCategoryId.Value));
             }
 
             if (favoritesOnly)
@@ -179,10 +171,6 @@ namespace PollChatApi.DAL
 
             thread.Title = dto.Title;
             thread.Content = dto.Content;
-
-            thread.SubjectId = dto.SubjectId;
-            thread.SubCategoryId = dto.SubCategoryId;
-
 
 
             _db.ThreadHistory.Add(history);
