@@ -13,11 +13,16 @@
         public string? ImagePath { get; set; }
 
         public virtual Subject Subject { get; set; } = null!;
+        public virtual User User { get; set; } = null!;
+
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? RemovedAt { get; set; }
 
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+
+
     }
 }

@@ -1,27 +1,51 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollChatApi.DTO;
 using PollChatApi.Model;
 
 namespace PollChatApi.DAL
 {
-    public static class ThreadManager
+    public class ThreadManager
     {
-        private static MyDbContext _db;
+        private readonly MyDbContext _db;
 
-        public static void Init(MyDbContext db)
+        public ThreadManager(MyDbContext db)
         {
             _db = db;
         }
+        public async Task<List<MainThreadDto>> GetThreadList()
+        {
+            var threads = await _db.MainThreads
+                .Include(i=>i.Subject)
+                .Select(p => new MainThreadDto
+            {
+                Content = p.Content,
+                Title = p.Title,
+                CommentCount = p.Comments.Count(),
+                ImagePath = p.ImagePath,
+                CreatedAt = p.CreatedAt,
+                Id = p.Id,
+                UserId = p.UserId,
+                Subject = new SubjectDto
+                {
+                    Id = p.SubjectId,
+                    Name = p.Subject.Title
+                }
+            })
+                .ToListAsync();
 
 
-        public static async Task<List<MainThread>> GetNewestThreads()
+            
+
+            return threads; 
+        }
+
+        public async Task<List<MainThread>> GetNewestThreads()
         {
             try
             {
                 return await _db.MainThreads
-                    .Where(p=>p.RemovedAt == null)
+                    .Where(p => p.RemovedAt == null)
                 .OrderByDescending(t => t.Id)
                 .Take(4)
                 .ToListAsync();
@@ -32,126 +56,161 @@ namespace PollChatApi.DAL
             }
         }
 
-        public static async Task<List<CommentCountDto>> GetMostCommentsToday()
+        public async Task<List<MainThreadDto>> GetMostCommentsToday()
         {
             var today = DateTime.Today;
 
-
-            var CommentsCountToday = await _db.MainThreads
-                .Select(t => new CommentCountDto
-                {
-                    Thread = t,
-                    CommentsToday = t.Comments.Count(c => c.Date.Date == today)
-                })
-                .OrderByDescending(x => x.CommentsToday)
+            var threads = await _db.MainThreads
+                    .Where(t => t.RemovedAt == null)
+                    .Select(t => new MainThreadDto
+                    {
+                        Id = t.Id,
+                        Title = t.Title,
+                        Content = t.Content,
+                        ImagePath = t.ImagePath,
+                        SubjectId = t.SubjectId,
+                        Subject = new SubjectDto
+                        {
+                            Id = t.Subject.Id,
+                            Name = t.Subject.Title
+                        },
+                        CreatedAt = t.CreatedAt,
+                        CommentCount = t.Comments.Count(c => c.Date.Date == today)
+                    })
+                            .OrderByDescending(x => x.CommentCount)
                 .Take(4)
                 .ToListAsync();
 
-            return CommentsCountToday;
+            return threads;
         }
 
-        public static async Task<List<CommentCountDto>> GetMostCommentsWeek()
+        public async Task<List<MainThreadDto>> GetMostCommentsWeek()
         {
             var today = DateTime.Today;
 
             var weekStart = today.AddDays(-(int)today.DayOfWeek + (today.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
 
-            var CommentsCountWeek = await _db.MainThreads
-            .Select(t => new CommentCountDto
-            {
-                Thread = t,
-                CommentsToday = t.Comments.Count(c => c.Date.Date >= weekStart && c.Date.Date <= today)
+            var threads = await _db.MainThreads
+                     .Where(t => t.RemovedAt == null)
+                     .Select(t => new MainThreadDto
+                     {
+                         Id = t.Id,
+                         Title = t.Title,
+                         Content = t.Content,
+                         ImagePath = t.ImagePath,
+                         SubjectId = t.SubjectId,
+                         Subject = new SubjectDto
+                         {
+                             Id = t.Subject.Id,
+                             Name = t.Subject.Title
+                         },
+                         CreatedAt = t.CreatedAt,
+
+                         CommentCount = t.Comments.Count(c => c.Date.Date >= weekStart && c.Date.Date <= today)
             })
-            .OrderByDescending(x => x.CommentsToday)
+            .OrderByDescending(x => x.CommentCount)
             .Take(4)
             .ToListAsync();
 
-            return CommentsCountWeek;
+            return threads;
         }
 
-        public static async Task<UserFavorites?> GetFavs(string userId)
+        public async Task<UserFavoritesDto?> GetFavs(string userId)
         {
             var user = await _db.Users
                .Include(u => u.FavoriteSubjects)
                .Include(u => u.FavoriteThreads)
-               .FirstOrDefaultAsync(u => u.Id == userId);
+               .FirstOrDefaultAsync(u => u.UserId == userId);
 
             if (user == null)
             { return null; }
 
-            return new UserFavorites
+            return new UserFavoritesDto
             {
-                Id = user.Id,
-                FavoriteSubjects = user.FavoriteSubjects?.ToList() ?? new(),
-                FavoriteThreads = user.FavoriteThreads?.ToList() ?? new()
-            };
-        }
 
-
-        public static async Task<ThreadFilterResult> GetFilterdThreads(
-                        string userId,
-            [FromQuery] int? subjectId,
-            [FromQuery] int limit = 10,
-            [FromQuery] string? afterCursor = null,
-            [FromQuery] bool favoritesOnly = false
-                        )
-        {
-            var query = _db.MainThreads.AsQueryable();
-
-            if (subjectId.HasValue)
-            {
-                query = query.Where(t => t.SubjectId == subjectId.Value);
-            }
-
-            if (favoritesOnly)
-            {
-                var favoriteIds = await GetFavoriteThreadIds(userId);
-                query = query.Where(t => favoriteIds.Contains(t.Id));
-            }
-
-            if (!string.IsNullOrEmpty(afterCursor))
-            {
-                var parts = afterCursor.Split('_');
-                if (parts.Length == 2 &&
-                    long.TryParse(parts[0], out var ticks) &&
-                    Guid.TryParse(parts[1], out var lastId))
+                Id = userId,
+                FavoriteSubjects = user.FavoriteSubjects?.Select(s => new SubjectDto
                 {
-                    var cursorTime = new DateTime(ticks);
-                    query = query.Where(t =>
-                    t.CreatedAt < cursorTime ||
-                    (t.CreatedAt == cursorTime && t.Id.CompareTo(lastId) == 0));
-                }
-            }
+                    Id = s.Id,
+                    Name = s.Title
+                }).ToList() ?? new List<SubjectDto>(),
 
-            var threads = await query.OrderByDescending(t => t.CreatedAt).
-                                ThenBy(t => t.Id).
-                                Take(limit + 1).
-                                ToListAsync();
-
-            var hasMore = threads.Count > limit;
-            if (hasMore)
-            {
-                threads.RemoveAt(threads.Count - 1);
-            }
-
-            var nextCursor = hasMore ? $"{threads.Last().CreatedAt.Ticks}_{threads.Last().Id}" : null;
-
-            return new ThreadFilterResult
-            {
-                Threads = threads,
-                NextCursor = nextCursor,
-                HasMore = hasMore
+                FavoriteThreads = user.FavoriteThreads?.Select(x => new MainThreadDto
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Content = x.Content,
+                    ImagePath = x.ImagePath,
+                    SubjectId = x.SubjectId,
+                    Subject = new SubjectDto
+                    {
+                        Id = x.Subject.Id,
+                        Name = x.Subject.Title
+                    },
+                    CreatedAt = x.CreatedAt
+                }).ToList() ?? new List<MainThreadDto>()
             };
         }
-        public static async Task<List<int>> GetFavoriteThreadIds(string userId)
-        {
-            return await _db.Users
-                .Where(u => u.Id == userId)
-                .SelectMany(u => u.FavoriteThreads.Select(ft => ft.Id))
-                .ToListAsync();
-        }
 
-        public static async Task<IActionResult> UpdateThread([FromBody] ThreadEditDto dto)
+
+        //public async Task<ThreadFilterResult> GetFilterdThreads(
+        //                string userId,
+        //    [FromQuery] int? subjectId,
+        //    [FromQuery] int limit = 10,
+        //    [FromQuery] string? afterCursor = null,
+        //    [FromQuery] bool favoritesOnly = false
+        //                )
+        //{
+        //    var query = _db.MainThreads.AsQueryable();
+
+        //    if (subjectId.HasValue)
+        //    {
+        //        query = query.Where(t => t.SubjectId == subjectId.Value);
+        //    }
+
+        //    if (favoritesOnly)
+        //    {
+        //        var favoriteIds = await GetFavoriteThreadIds(userId);
+        //        query = query.Where(t => favoriteIds.Contains(t.Id));
+        //    }
+
+        //    if (!string.IsNullOrEmpty(afterCursor))
+        //    {
+        //        var parts = afterCursor.Split('_');
+        //        if (parts.Length == 2 &&
+        //            long.TryParse(parts[0], out var ticks) &&
+        //            Guid.TryParse(parts[1], out var lastId))
+        //        {
+        //            var cursorTime = new DateTime(ticks);
+        //            query = query.Where(t =>
+        //            t.CreatedAt < cursorTime ||
+        //            (t.CreatedAt == cursorTime && t.Id.CompareTo(lastId) == 0));
+        //        }
+        //    }
+
+        //    var threads = await query.OrderByDescending(t => t.CreatedAt).
+        //                        ThenBy(t => t.Id).
+        //                        Take(limit + 1).
+        //                        ToListAsync();
+
+        //    var hasMore = threads.Count > limit;
+        //    if (hasMore)
+        //    {
+        //        threads.RemoveAt(threads.Count - 1);
+        //    }
+
+        //    var nextCursor = hasMore ? $"{threads.Last().CreatedAt.Ticks}_{threads.Last().Id}" : null;
+
+        //    return new ThreadFilterResult
+        //    {
+        //        Threads = threads,
+        //        NextCursor = nextCursor,
+        //        HasMore = hasMore
+        //    };
+        //}
+
+
+        public async Task<IActionResult> UpdateThread([FromBody] ThreadEditDto dto)
         {
             var thread = await _db.MainThreads.Where(p => p.Id == dto.ThreadId).FirstOrDefaultAsync();
 
@@ -180,11 +239,11 @@ namespace PollChatApi.DAL
             return new OkObjectResult(thread);
         }
 
-        public static async Task<IActionResult> UpdateComment([FromBody] CommentEditHistory dto)
+        public async Task<IActionResult> UpdateComment([FromBody] CommentEditHistory dto)
         {
-            var oldComment = await _db.Comments.Where(p=>p.Id == dto.Id).SingleOrDefaultAsync();
+            var oldComment = await _db.Comments.Where(p => p.Id == dto.Id).SingleOrDefaultAsync();
 
-            if(oldComment == null)
+            if (oldComment == null)
             {
                 return new NotFoundObjectResult($"Comment with ID {dto.Id} not found.");
             }
@@ -197,7 +256,7 @@ namespace PollChatApi.DAL
             };
 
             oldComment.Text = dto.Text;
-            
+
             _db.CommentHistory.Add(history);
 
             _db.SaveChanges();
@@ -205,10 +264,12 @@ namespace PollChatApi.DAL
             return new OkObjectResult(oldComment);
         }
 
-        public static async Task<IActionResult> GetThreadDetails(int id)
+        public async Task<IActionResult> GetThreadDetails(int id) 
         {
             var thread = await _db.MainThreads
-                .Include(p=>p.Comments)
+                .Where(p=> p.Id == id)
+                .Include(p => p.Comments)
+                
                 .ToListAsync();
 
             if (thread == null)
@@ -217,6 +278,33 @@ namespace PollChatApi.DAL
             return new OkObjectResult(thread);
         }
 
+        public List<CommentDto> BuildCommentTree(List<Comment> allComments)
+        {
+            var commentDtoLookup = allComments.ToDictionary(
+                    c => c.Id,
+                    c => new CommentDto
+                    {
+                        UserId = c.UserId,
+                        Text = c.Text,
+                        Date = c.Date,
+                        Replies = new List<CommentDto>()
+                    });
+            
+            var branches = new List<CommentDto>();
+
+            foreach (var comment in allComments)
+            {
+                if (comment.ParentCommentId == null)
+                {
+                    branches.Add(commentDtoLookup[comment.Id]);
+                }
+                else if (commentDtoLookup.TryGetValue(comment.ParentCommentId.Value, out var parent))
+                {
+                    parent.Replies.Add(commentDtoLookup[comment.Id]);
+                }
+            }
+            return branches;
+        }
 
 
     }

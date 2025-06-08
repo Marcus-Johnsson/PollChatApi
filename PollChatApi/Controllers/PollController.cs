@@ -26,7 +26,7 @@ namespace PollChatApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Server error" + ex.Message);
+                return StatusCode(500, "Server error1111111111111111111111111" + ex.Message);
             }
         }
     }

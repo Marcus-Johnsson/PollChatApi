@@ -42,6 +42,8 @@ namespace PollChatApi
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddHostedService<SetWinnerBackgroundService>();
             builder.Services.AddScoped<SettWinner>();
+            builder.Services.AddScoped<ThreadManager>();
+
             builder.Services.AddScoped<CreatePollWeekly>();
             builder.Services.AddScoped<DeleteFromDatabase>();
             builder.Services.AddScoped<DeleteCommentsFromDatabase>();

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PollChatApi.DAL;
 using PollChatApi.DTO;
 using PollChatApi.Model;
+using PollChatApi.Service;
 
 namespace PollChatApi.Controllers
 {
@@ -10,16 +11,38 @@ namespace PollChatApi.Controllers
     [Route("api/[controller]")]
     public class ThreadController : Controller
     {
+        private readonly ThreadManager _threadManager;
         private readonly MyDbContext _db;
-        public ThreadController(MyDbContext db)
-        { _db = db; }
-
-        [HttpGet("Getfavo")]
-        public async Task<ActionResult<UserFavorites>> GetFavoriteSubject(string id)
+        public ThreadController(MyDbContext db, ThreadManager threadManager)
+        {
+            _db = db;
+            _threadManager = threadManager;
+        }
+        [HttpGet("threadlist")]
+        public async Task<IActionResult> GetThreadList()
         {
             try
             {
-                var result = await ThreadManager.GetFavs(id);
+               var result = await _threadManager.GetThreadList();
+
+               if(result== null)
+                { return NotFound(); }
+
+                return Ok(result);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "server error: " + ex.Message);
+            }
+
+        }
+        [HttpGet("Getfavo")]
+        public async Task<ActionResult<UserFavoritesDto>> GetFavoriteSubject(string id)
+        {
+            try
+            {
+                var result = await _threadManager.GetFavs(id);
                 if (result == null)
                     return NotFound();
 
@@ -35,7 +58,7 @@ namespace PollChatApi.Controllers
         {
             try
             {
-                var result = await ThreadManager.GetNewestThreads();
+                var result = await _threadManager.GetNewestThreads();
                 if (result == null)
                 { return NotFound(); }
 
@@ -48,11 +71,11 @@ namespace PollChatApi.Controllers
             }
         }
         [HttpGet("today")]
-        public async Task<ActionResult<CommentCountDto>> GetMostCommentsToday()
+        public async Task<ActionResult<MainThreadDto>> GetMostCommentsToday()
         {
             try
             {
-                var result = await ThreadManager.GetMostCommentsToday();
+                var result = await _threadManager.GetMostCommentsToday();
                 if (result == null)
                 { return NotFound(); }
 
@@ -65,11 +88,11 @@ namespace PollChatApi.Controllers
             }
         }
         [HttpGet("week")]
-        public async Task<ActionResult<CommentCountDto>> GetMostCommentsWeek()
+        public async Task<ActionResult<MainThreadDto>> GetMostCommentsWeek()
         {
             try
             {
-                var result = await ThreadManager.GetMostCommentsWeek();
+                var result = await _threadManager.GetMostCommentsWeek();
                 if (result == null)
                 { return NotFound(); }
 
@@ -82,57 +105,42 @@ namespace PollChatApi.Controllers
             }
         }
 
-        [HttpGet("filter/{userId}")]
-        public async Task<IActionResult> GetFilteredSearch(
-            string userId,
-            [FromQuery] int subjectId,
-            [FromQuery] int limit = 10,
-            [FromQuery] string? afterCursor = null,
-            [FromQuery] List<int>? subcategoryIds = null,
-            [FromQuery] bool favoritesOnly = false)
-        {
-            try
-            {
-                var result = await ThreadManager.GetFilterdThreads(userId, subjectId, limit, afterCursor, favoritesOnly);
-                if (result == null)
-                { return NotFound(); }
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "server error: " + ex.Message);
-            }
-        }
+        //[HttpGet("filter/{userId}")]
+        //public async Task<IActionResult> GetFilteredSearch(
+        //    string userId,
+        //    [FromQuery] int subjectId,
+        //    [FromQuery] int limit = 10,
+        //    [FromQuery] string? afterCursor = null,
+        //    [FromQuery] List<int>? subcategoryIds = null,
+        //    [FromQuery] bool favoritesOnly = false)
+        //{
+        //    try
+        //    {
+        //        var result = await _threadManager.GetFilterdThreads(userId, subjectId, limit, afterCursor, favoritesOnly);
+        //        if (result == null)
+        //        { return NotFound(); }
+        //        return Ok(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, "server error: " + ex.Message);
+        //    }
+        //}
 
         [HttpPost("createthread")]
-        public async Task<IActionResult> PostThread([FromForm] ThreadWithImageDto dto)
+        public async Task<IActionResult> PostThread([FromBody] ThreadWithImageDto dto)
         {
             try
             {
-                string? imagePath = null;
 
-                if (dto.Image != null)
-                {
-                    var fileName = Guid.NewGuid() + Path.GetExtension(dto.Image.FileName);
-                    var filePath = Path.Combine("wwwroot", "userImage", fileName);
-
-                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-
-                    using var stream = new FileStream(filePath, FileMode.Create);
-                    await dto.Image.CopyToAsync(stream);
-
-                    imagePath = "/userImage" + fileName;
-
-                }
-
-
+                
                 var newThread = new MainThread
                 {
                     UserId = dto.UserId,
                     SubjectId = dto.SubjectId,
-                    ImagePath = imagePath,
+                    ImagePath = dto.Image,
                     Title = dto.Title,
-                    Content = dto.Content,
+                    Content = dto.Text,
                     CreatedAt = DateTime.UtcNow
                 };
                 await _db.AddAsync(newThread);
@@ -232,8 +240,51 @@ namespace PollChatApi.Controllers
             return Ok();
         }
 
+        [HttpGet("details/{id}")]
+        public async Task<ActionResult<ThreadViewModel>> ThreadDetails(int id)
+        {
+            var thread = await _db.MainThreads
+                .Include(t => t.Subject)
+                .Include(t => t.Comments)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (thread == null)
+                return  NotFound();
+
+            // Create the Comment tree
+            var commentTree = _threadManager.BuildCommentTree(thread.Comments.ToList());
+
+           
+            var threadDto = new MainThreadDto
+            {
+                Id = thread.Id,
+                Title = thread.Title,
+                Content = thread.Content,
+                ImagePath = thread.ImagePath,
+                SubjectId = thread.SubjectId,
+                UserId = thread.UserId,
+                Subject = new SubjectDto
+                {
+                    Id = thread.Subject.Id,
+                    Name = thread.Subject.Title
+                },
+                CreatedAt = thread.CreatedAt,
+            };
+
+            var viewModel = new ThreadViewModel
+            {
+                Thread = threadDto,
+                CommentsTree = commentTree
+            };
+
+            return viewModel;
+        }
+
+
         // api's to create....
 
         // UpdateThread check, GetThreadDetails check, AddComment check, UpdateComment check, DeleteComment, AddFavorite,VoteOnPoll
+
+
     }
 }

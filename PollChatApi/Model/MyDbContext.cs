@@ -14,14 +14,15 @@ namespace PollChatApi.Model
         public DbSet<Subject> Subjects { get; set; }
         public DbSet<Vote> Votes { get; set; }
 
-        public DbSet<User> Users { get; set; }
         public DbSet<MainThread> MainThreads { get; set; }
 
         public DbSet<Comment> Comments { get; set; }
 
+        public DbSet<User> Users { get; set; }
         public DbSet<ThreadEditHistory> ThreadHistory { get; set; }
 
         public DbSet<CommentEditHistory> CommentHistory { get; set; }
+        public DbSet<Warning> Warnings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

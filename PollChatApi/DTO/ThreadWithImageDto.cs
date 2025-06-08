@@ -8,8 +8,8 @@
 
         public string Title { get; set; } = string.Empty;
 
-        public string Content { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
 
-        public IFormFile? Image { get; set; }
+        public string? Image { get; set; }
     }
 }

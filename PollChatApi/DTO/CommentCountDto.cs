@@ -4,7 +4,7 @@ namespace PollChatApi.DTO
 {
     public class CommentCountDto
     {
-        public MainThread Thread { get; set; }
+        public MainThreadDto Thread { get; set; }
 
         public int CommentsToday { get; set; }
     }

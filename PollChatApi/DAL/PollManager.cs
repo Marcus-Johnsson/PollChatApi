@@ -18,6 +18,7 @@ namespace PollChatApi.DAL
         {
             var latestPoll = await _db.Polls
                 .Include(p => p.Votes)
+                .OrderByDescending(p=>p.Id)
                 .FirstOrDefaultAsync();
 
             //if (latestPoll == null)
