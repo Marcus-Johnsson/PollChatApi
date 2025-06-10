@@ -285,6 +285,8 @@ namespace PollChatApi.DAL
                     c => new CommentDto
                     {
                         UserId = c.UserId,
+                        Id = c.Id,
+                        ParentCommentId = c.ParentCommentId,
                         Text = c.Text,
                         Date = c.Date,
                         Replies = new List<CommentDto>()
