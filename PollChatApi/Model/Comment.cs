@@ -20,6 +20,7 @@
         public int? ParentCommentId { get; set; }     // First comment is null
         public virtual Comment? ParentComment { get; set; }
 
+        public bool RemovedByAdmin { get; set; } = false;
         public virtual ICollection<Comment> Replies { get; set; } = new List<Comment>();
     }
 }

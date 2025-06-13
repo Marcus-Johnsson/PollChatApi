@@ -26,12 +26,12 @@ namespace PollChatApi.DAL
                 CreatedAt = p.CreatedAt,
                 Id = p.Id,
                 UserId = p.UserId,
-                Subject = new SubjectDto
-                {
-                    Id = p.SubjectId,
-                    Name = p.Subject.Title
-                }
-            })
+                    Subject = p.Subject != null ? new SubjectDto
+                    {
+                        Id = p.SubjectId,
+                        Name = p.Subject.Title
+                    } : null
+                })
                 .ToListAsync();
 
 
@@ -40,15 +40,21 @@ namespace PollChatApi.DAL
             return threads; 
         }
 
-        public async Task<List<MainThread>> GetNewestThreads()
+        public async Task<List<NewestThreadDto>> GetNewestThreads()
         {
             try
             {
-                return await _db.MainThreads
-                    .Where(p => p.RemovedAt == null)
-                .OrderByDescending(t => t.Id)
-                .Take(4)
-                .ToListAsync();
+                 return await _db.MainThreads
+                     .Where(p => p.RemovedAt == null)
+                     .OrderByDescending(t => t.Id)
+                     .Take(4)
+                     .Select(p => new NewestThreadDto()
+                     {
+                         Id = p.Id,
+                         Title = p.Title,
+                         CommentCount = p.Comments.Count()
+                     })
+                     .ToListAsync();
             }
             catch (Exception ex)
             {
@@ -75,7 +81,7 @@ namespace PollChatApi.DAL
                             Name = t.Subject.Title
                         },
                         CreatedAt = t.CreatedAt,
-                        CommentCount = t.Comments.Count(c => c.Date.Date == today)
+                        CommentCount = t.Comments.Count(c => c.Date.Date == today) // Thread can be old but comment count is same day
                     })
                             .OrderByDescending(x => x.CommentCount)
                 .Take(4)
@@ -106,8 +112,8 @@ namespace PollChatApi.DAL
                          },
                          CreatedAt = t.CreatedAt,
 
-                         CommentCount = t.Comments.Count(c => c.Date.Date >= weekStart && c.Date.Date <= today)
-            })
+                         CommentCount = t.Comments.Count(c => c.Date.Date >= weekStart && c.Date.Date <= today) // Thread can be old but comment count is same day
+                     })
             .OrderByDescending(x => x.CommentCount)
             .Take(4)
             .ToListAsync();

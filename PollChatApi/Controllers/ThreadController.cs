@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using PollChatApi.DAL;
 using PollChatApi.DTO;
 using PollChatApi.Model;
-using PollChatApi.Service;
 
 namespace PollChatApi.Controllers
 {
@@ -23,9 +22,9 @@ namespace PollChatApi.Controllers
         {
             try
             {
-               var result = await _threadManager.GetThreadList();
+                var result = await _threadManager.GetThreadList();
 
-               if(result== null)
+                if (result == null)
                 { return NotFound(); }
 
                 return Ok(result);
@@ -54,7 +53,7 @@ namespace PollChatApi.Controllers
             }
         }
         [HttpGet("newthreads")]
-        public async Task<ActionResult<MainThread>> GetNewestThreads()
+        public async Task<ActionResult<NewestThreadDto>> GetNewestThreads()
         {
             try
             {
@@ -105,35 +104,46 @@ namespace PollChatApi.Controllers
             }
         }
 
-        //[HttpGet("filter/{userId}")]
-        //public async Task<IActionResult> GetFilteredSearch(
-        //    string userId,
-        //    [FromQuery] int subjectId,
-        //    [FromQuery] int limit = 10,
-        //    [FromQuery] string? afterCursor = null,
-        //    [FromQuery] List<int>? subcategoryIds = null,
-        //    [FromQuery] bool favoritesOnly = false)
-        //{
-        //    try
-        //    {
-        //        var result = await _threadManager.GetFilterdThreads(userId, subjectId, limit, afterCursor, favoritesOnly);
-        //        if (result == null)
-        //        { return NotFound(); }
-        //        return Ok(result);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, "server error: " + ex.Message);
-        //    }
-        //}
+        [HttpPost("filtered")]
+        public async Task<IActionResult> GetFilteredSearch([FromBody] FilterSearch dto)
+        {
+            try
+            {
+                var threads = await _db.MainThreads
+                .Include(i => i.Subject)
+                .Where(p=>p.Subject.Id == dto.threadId)
+                .Select(p => new MainThreadDto
+                {
+                    Content = p.Content,
+                    Title = p.Title,
+                    CommentCount = p.Comments.Count(),
+                    ImagePath = p.ImagePath,
+                    CreatedAt = p.CreatedAt,
+                    Id = p.Id,
+                    UserId = p.UserId,
+                    Subject = new SubjectDto
+                    {
+                        Id = p.Subject.Id,
+                        Name = p.Subject.Title
+                    }
+                })
+                .ToListAsync();
+
+                if (threads == null)
+                { return NotFound(); }
+                return Ok(threads);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "server error: " + ex.Message);
+            }
+        }
 
         [HttpPost("createthread")]
         public async Task<IActionResult> PostThread([FromBody] ThreadWithImageDto dto)
         {
             try
             {
-
-                
                 var newThread = new MainThread
                 {
                     UserId = dto.UserId,
@@ -141,12 +151,36 @@ namespace PollChatApi.Controllers
                     ImagePath = dto.Image,
                     Title = dto.Title,
                     Content = dto.Text,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    RemovedByAdmin = false
                 };
                 await _db.AddAsync(newThread);
                 await _db.SaveChangesAsync();
 
                 return Ok(newThread);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "server error: " + ex.Message);
+            }
+
+        }
+        [HttpPost("createsubject")]
+        public async Task<IActionResult> PostSubject([FromBody] CreateSubjectDto dto)
+        {
+            try
+            {
+
+
+                var subject = new Subject()
+                {
+                    Title = dto.Name
+                }; 
+                await _db.AddAsync(subject);
+                await _db.SaveChangesAsync();
+
+                return Ok();
 
             }
             catch (Exception ex)
@@ -166,7 +200,9 @@ namespace PollChatApi.Controllers
                     Text = dto.Comment,
                     Date = DateTime.UtcNow,
                     ParentCommentId = dto.ParentCommentId,
-                    ThreadId = dto.ThreadId
+                    ThreadId = dto.ThreadId,
+                    RemovedByAdmin = false
+
                 };
 
                 if (dto.ParentCommentId.HasValue)
@@ -189,18 +225,19 @@ namespace PollChatApi.Controllers
             }
         }
 
-        [HttpPut("deletethread/{id}")]
-        public async Task<IActionResult> DeleteThread([FromQuery] string userId, int id)
+        [HttpPut("deletethread")]
+        public async Task<IActionResult> DeleteThreadDeleteThread([FromBody] DeleteThreadDto dto)
         {
+
             var result = await _db.MainThreads
                 .Include(p => p.Comments)
-                .SingleOrDefaultAsync(p => p.Id == id);
+                .SingleOrDefaultAsync(p => p.Id == dto.ThreadId);
 
 
             if (result == null)
             { return NotFound(); }
 
-            if (result.UserId != userId)
+            if (result.UserId != dto.UserId)
             { return Forbid(); }
 
             foreach (var comment in result.Comments)
@@ -213,12 +250,12 @@ namespace PollChatApi.Controllers
 
             return Ok();
         }
-        [HttpPut("deletecomment/{id}")]
-        public async Task<IActionResult> DeleteComment([FromQuery] string userId, int id)
+        [HttpPut("deletecomment")]
+        public async Task<IActionResult> DeleteComment([FromBody] DeleteThreadDto dto)
         {
             var comment = await _db.Comments
             .Include(c => c.Replies)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.Id == dto.ThreadId);
 
             if (comment == null)
             { return NotFound(); }
@@ -242,19 +279,19 @@ namespace PollChatApi.Controllers
 
         [HttpGet("details/{id}")]
         public async Task<ActionResult<ThreadViewModel>> ThreadDetails(int id)
-        {
+         {
             var thread = await _db.MainThreads
                 .Include(t => t.Subject)
                 .Include(t => t.Comments)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (thread == null)
-                return  NotFound();
+                return NotFound();
 
             // Create the Comment tree
             var commentTree = _threadManager.BuildCommentTree(thread.Comments.ToList());
 
-           
+
             var threadDto = new MainThreadDto
             {
                 Id = thread.Id,
@@ -269,6 +306,8 @@ namespace PollChatApi.Controllers
                     Name = thread.Subject.Title
                 },
                 CreatedAt = thread.CreatedAt,
+                RemovedByAdmin = thread.RemovedByAdmin,
+                
             };
 
             var viewModel = new ThreadViewModel

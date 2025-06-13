@@ -48,6 +48,8 @@ namespace PollChatApi
             builder.Services.AddScoped<DeleteFromDatabase>();
             builder.Services.AddScoped<DeleteCommentsFromDatabase>();
             builder.Services.AddScoped<PollManager>();
+            builder.Services.AddScoped<AdminManager>();
+
 
 
 

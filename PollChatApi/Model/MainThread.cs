@@ -19,6 +19,8 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? RemovedAt { get; set; }
+        public bool?     RemovedByAdmin { get; set; }
+
 
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 

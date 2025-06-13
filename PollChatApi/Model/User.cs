@@ -12,7 +12,7 @@ namespace PollChatApi.Model
 
         //public bool? Banned { get; set; }
 
-        public string ProfilePicture { get; set; }
+        public string? ProfilePicture { get; set; }
 
         public ICollection<MainThread>? FavoriteThreads { get; set; }
 

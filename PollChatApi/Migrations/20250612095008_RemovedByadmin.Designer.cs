@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PollChatApi.Model;
 
@@ -11,9 +12,11 @@ using PollChatApi.Model;
 namespace PollChatApi.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250612095008_RemovedByadmin")]
+    partial class RemovedByadmin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -109,7 +112,7 @@ namespace PollChatApi.Migrations
                     b.Property<DateTime?>("RemovedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool?>("RemovedByAdmin")
+                    b.Property<bool>("RemovedByAdmin")
                         .HasColumnType("bit");
 
                     b.Property<int>("SubjectId")
@@ -278,14 +281,6 @@ namespace PollChatApi.Migrations
 
                     b.Property<int>("ObjectsId")
                         .HasColumnType("int");
-
-                    b.Property<string>("RepoUser")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("Relational:JsonPropertyName", "RepoUser");
-
-                    b.Property<bool>("Scrap")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Type")
                         .IsRequired()

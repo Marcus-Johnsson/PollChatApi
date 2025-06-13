@@ -27,10 +27,11 @@ namespace PollChatApi.Model
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<MainThread>()
-                .HasQueryFilter(t => t.RemovedAt == null);
+              .HasQueryFilter(t => t.RemovedAt == null /*&& t.RemovedByAdmin == false*/);
 
             modelBuilder.Entity<Comment>()
                 .HasQueryFilter(c => c.RemovedAt == null);
+
 
         }
 

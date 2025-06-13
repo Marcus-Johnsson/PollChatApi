@@ -15,5 +15,8 @@
         public DateTime Date { get; set; }
 
         public List<CommentDto> Replies { get; set; } = new();
+
+        public bool RemovedByAdmin { get; set; }
+
     }
 }
