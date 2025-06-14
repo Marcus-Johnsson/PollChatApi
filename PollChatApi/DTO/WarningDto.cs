@@ -33,5 +33,6 @@ namespace PollChatApi.DTO
         [JsonPropertyName("RepoUser")]
         public string RepoUser { get; set; } //the user that reported
 
+
     }
 }

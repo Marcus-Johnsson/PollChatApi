@@ -27,6 +27,7 @@ namespace PollChatApi.Model
         public bool Scrap { get; set; }
 
 
+
         [JsonPropertyName("RepoUser")]
         public string RepoUser { get; set; } // the one that made the report
 

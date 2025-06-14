@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PollChatApi.DTO;
 using PollChatApi.Model;
-using System.Threading;
 
 namespace PollChatApi.DAL
 {
@@ -27,11 +26,12 @@ namespace PollChatApi.DAL
                     Type = o.Type,
                     Id = o.Id,
                     UserId = o.UserId,
-                    Scrap = false,
+                    Scrap = o.Scrap,
                     RepoUser = o.RepoUser,
 
                 })
                 .ToListAsync();
+
 
             return warnings;
         }
@@ -49,7 +49,7 @@ namespace PollChatApi.DAL
                     Type = o.Type,
                     Id = o.Id,
                     UserId = o.UserId,
-                    Scrap = false
+                    Scrap = o.Scrap
 
                 })
                 .ToListAsync();
@@ -61,7 +61,9 @@ namespace PollChatApi.DAL
         {
             if (dto.ObjectType == "Thread")
             {
-                var thread = _db.MainThreads.Where(p => p.Id == dto.ObjectId).FirstOrDefault();
+                var thread = _db.MainThreads.Where(p => p.Id == dto.ObjectId)
+                    .IgnoreQueryFilters()
+                    .FirstOrDefault();
 
                 thread.RemovedByAdmin = dto.Toggle;
                 thread.RemovedAt = dto.Toggle == false ? null : DateTime.UtcNow;
@@ -78,7 +80,40 @@ namespace PollChatApi.DAL
                 _db.Update(comment);
             }
 
-            _db.SaveChanges();
+            var warning = await _db.Warnings.Where(p => p.Id == dto.WarningId).FirstOrDefaultAsync();
+
+            if (dto.Action == "Scrap")
+            {
+                warning.Scrap = true;
+                warning.HandeldAtTime = DateTime.UtcNow;
+                warning.AdminId = dto.AdminId;
+                warning.IsHandled = true;
+
+                _db.Update(warning);
+            }
+
+            if (dto.Action == "Remove")
+            {
+                warning.Scrap = false;
+                warning.HandeldAtTime = DateTime.UtcNow;
+                warning.AdminId = dto.AdminId;
+                warning.IsHandled = true;
+            }
+
+            if (dto.Action == "Reverse")
+            {
+                warning.Scrap = false;
+                warning.HandeldAtTime = DateTime.UtcNow;
+                warning.AdminId = dto.AdminId;
+                warning.IsHandled = true;
+            }
+
+
+
+            _db.Update(warning);
+
+
+            await _db.SaveChangesAsync();
 
         }
     }

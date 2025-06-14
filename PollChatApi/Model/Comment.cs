@@ -21,6 +21,9 @@
         public virtual Comment? ParentComment { get; set; }
 
         public bool RemovedByAdmin { get; set; } = false;
+
+        public bool RemovedByUser { get; set; } = false;
+
         public virtual ICollection<Comment> Replies { get; set; } = new List<Comment>();
     }
 }

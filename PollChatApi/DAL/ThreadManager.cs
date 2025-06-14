@@ -295,7 +295,11 @@ namespace PollChatApi.DAL
                         ParentCommentId = c.ParentCommentId,
                         Text = c.Text,
                         Date = c.Date,
-                        Replies = new List<CommentDto>()
+                        Replies = new List<CommentDto>(),
+                        RemovedByAdmin = c.RemovedByAdmin,
+                        RemovedByUser = c.RemovedByUser,
+                        DepthValue = 0,
+                        ThreadId =c.ThreadId
                     });
             
             var branches = new List<CommentDto>();
@@ -304,14 +308,47 @@ namespace PollChatApi.DAL
             {
                 if (comment.ParentCommentId == null)
                 {
+                    
                     branches.Add(commentDtoLookup[comment.Id]);
                 }
                 else if (commentDtoLookup.TryGetValue(comment.ParentCommentId.Value, out var parent))
                 {
-                    parent.Replies.Add(commentDtoLookup[comment.Id]);
+                    var currentComment = commentDtoLookup[comment.Id];
+                    parent.Replies.Add(currentComment);
+                    currentComment.DepthValue = parent.DepthValue + 1;
                 }
             }
-            return branches;
+
+            var commentOrder = new List<CommentDto>();
+            foreach (var comment in branches)
+            {
+                if(comment.RemovedByAdmin == true)
+                {
+                    comment.Text = "Comment removed by admin. Behave!";
+                }
+                if (comment.RemovedByUser == true)
+                {
+                    comment.Text = "Comment removed by user. Chicken! BWAK BAWK";
+                }
+                
+            }
+
+            FlatTheTree(branches);
+
+            void FlatTheTree(List<CommentDto> branches)
+            {
+                foreach (var comment in branches)
+                {
+                        commentOrder.Add(comment);
+                  
+                    if (comment.Replies != null && comment.Replies.Any())
+                    {
+                        FlatTheTree(comment.Replies.ToList());
+                    }
+                }
+            }
+
+            return commentOrder;
         }
 
 

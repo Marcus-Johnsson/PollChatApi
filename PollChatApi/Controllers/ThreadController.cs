@@ -201,7 +201,9 @@ namespace PollChatApi.Controllers
                     Date = DateTime.UtcNow,
                     ParentCommentId = dto.ParentCommentId,
                     ThreadId = dto.ThreadId,
-                    RemovedByAdmin = false
+                    RemovedByAdmin = false,
+                    RemovedByUser = false,
+                    
 
                 };
 
@@ -226,7 +228,7 @@ namespace PollChatApi.Controllers
         }
 
         [HttpPut("deletethread")]
-        public async Task<IActionResult> DeleteThreadDeleteThread([FromBody] DeleteThreadDto dto)
+        public async Task<IActionResult> DeleteThreadDeleteThread([FromBody] DeleteObjectDto dto)
         {
 
             var result = await _db.MainThreads
@@ -250,8 +252,9 @@ namespace PollChatApi.Controllers
 
             return Ok();
         }
+
         [HttpPut("deletecomment")]
-        public async Task<IActionResult> DeleteComment([FromBody] DeleteThreadDto dto)
+        public async Task<IActionResult> DeleteComment([FromBody] DeleteObjectDto dto)
         {
             var comment = await _db.Comments
             .Include(c => c.Replies)
@@ -260,30 +263,22 @@ namespace PollChatApi.Controllers
             if (comment == null)
             { return NotFound(); }
 
-            if (!comment.ParentCommentId.HasValue)
-            {
-                foreach (var replies in comment.Replies)
-                {
-                    replies.RemovedAt = DateTime.UtcNow;
-                }
-            }
-            else
-            {
-                comment.RemovedAt = DateTime.UtcNow;
-            }
+            comment.RemovedByUser = true;
+            comment.RemovedAt = DateTime.UtcNow;
 
+            _db.Update(comment);
             await _db.SaveChangesAsync();
 
             return Ok();
         }
 
-        [HttpGet("details/{id}")]
-        public async Task<ActionResult<ThreadViewModel>> ThreadDetails(int id)
+        [HttpGet("details/{threadId}")]
+        public async Task<ActionResult<ThreadViewModel>> ThreadDetails(int threadId)
          {
             var thread = await _db.MainThreads
                 .Include(t => t.Subject)
                 .Include(t => t.Comments)
-                .FirstOrDefaultAsync(t => t.Id == id);
+                .FirstOrDefaultAsync(t => t.Id == threadId);
 
             if (thread == null)
                 return NotFound();
