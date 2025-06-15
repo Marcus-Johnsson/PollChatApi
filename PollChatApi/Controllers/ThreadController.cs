@@ -105,13 +105,13 @@ namespace PollChatApi.Controllers
         }
 
         [HttpPost("filtered")]
-        public async Task<IActionResult> GetFilteredSearch([FromBody] FilterSearch dto)
+        public async Task<IActionResult> GetFilteredSearch([FromBody] int dto)
         {
             try
             {
                 var threads = await _db.MainThreads
                 .Include(i => i.Subject)
-                .Where(p=>p.Subject.Id == dto.threadId)
+                .Where(p=>p.Subject.Id == dto)
                 .Select(p => new MainThreadDto
                 {
                     Content = p.Content,

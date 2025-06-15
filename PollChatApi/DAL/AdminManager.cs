@@ -15,7 +15,7 @@ namespace PollChatApi.DAL
 
         public async Task<List<WarningDto>> GetThreadWarnings()
         {
-            var warnings = await _db.Warnings.Where(p => p.Type == "Thread")
+            var warningsThread = await _db.Warnings.Where(p => p.Type == "Thread")
                 .Select(o => new WarningDto()
                 {
                     AdminId = o.AdminId,
@@ -33,12 +33,12 @@ namespace PollChatApi.DAL
                 .ToListAsync();
 
 
-            return warnings;
+            return warningsThread;
         }
 
         public async Task<List<WarningDto>> GetCommentWarnings()
         {
-            var warnings = await _db.Warnings.Where(p => p.Type == "Comment")
+            var warningsComment = await _db.Warnings.Where(p => p.Type == "Comment")
                 .Select(o => new WarningDto()
                 {
                     AdminId = o.AdminId,
@@ -54,7 +54,7 @@ namespace PollChatApi.DAL
                 })
                 .ToListAsync();
 
-            return warnings;
+            return warningsComment;
         }
 
         public async Task PutThreadToggle(ReportInputDto dto)
@@ -72,7 +72,7 @@ namespace PollChatApi.DAL
             }
             else
             {
-                var comment = _db.Comments.Where(p => p.Id == dto.ObjectId).FirstOrDefault();
+                var comment = await _db.Comments.Where(p => p.Id == dto.ObjectId).FirstOrDefaultAsync();
 
                 comment.RemovedByAdmin = dto.Toggle;
                 comment.RemovedAt = dto.Toggle == false ? null : DateTime.UtcNow;

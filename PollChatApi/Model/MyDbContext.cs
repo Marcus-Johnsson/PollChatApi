@@ -29,8 +29,7 @@ namespace PollChatApi.Model
             modelBuilder.Entity<MainThread>()
               .HasQueryFilter(t => t.RemovedAt == null /*&& t.RemovedByAdmin == false*/);
 
-            modelBuilder.Entity<Comment>()
-                .HasQueryFilter(c => c.RemovedAt == null);
+ 
 
 
         }
