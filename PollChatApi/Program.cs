@@ -61,12 +61,11 @@ namespace PollChatApi
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment() || true)
-            {
+            
                 app.MapOpenApi();
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
+            
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
